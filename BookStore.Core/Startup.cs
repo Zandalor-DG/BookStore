@@ -1,14 +1,18 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SpaServices.ReactDevelopmentServer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 
 namespace BookStore.Core
 {
+    using BookStore.Model.DB_ApplicationContext;
+    using BookStore.Model.Models;
+    using Microsoft.AspNetCore.Authentication.JwtBearer;
+    using Microsoft.EntityFrameworkCore;
+    using Microsoft.Extensions.Hosting;
+    using Microsoft.IdentityModel.Tokens;
+
     public class Startup
     {
         public Startup(IConfiguration configuration)
@@ -21,7 +25,31 @@ namespace BookStore.Core
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllersWithViews();
+            var connection = Configuration.GetConnectionString("DefaultConnection");
+
+            services.AddDbContext<ApplicationContext>(options => options.UseSqlServer(connection));
+
+            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+                    .AddJwtBearer(options =>
+                                  { 
+                                      options.RequireHttpsMetadata = true;
+                                      options.TokenValidationParameters = new TokenValidationParameters
+                                                                          {
+                                                                                  ValidateIssuer = true,
+                                                                                  ValidIssuer = TokenForUser.ISSUER,
+
+                                                                                  ValidateAudience = true,
+                                                                                  ValidAudience = TokenForUser.AUDIENCE,
+                                                                                  ValidateLifetime = true,
+
+                                                                                  IssuerSigningKey = TokenForUser.GetSymmetricSecurityKey(),
+                                                                                  ValidateIssuerSigningKey = true,
+                                                                          };
+                                  }
+        );
+
+
+        services.AddControllersWithViews();
 
             // In production, the React files will be served from this directory
             services.AddSpaStaticFiles(configuration =>
@@ -44,11 +72,15 @@ namespace BookStore.Core
                 app.UseHsts();
             }
 
+            app.UseDeveloperExceptionPage();
             app.UseHttpsRedirection();
             app.UseStaticFiles();
             app.UseSpaStaticFiles();
 
             app.UseRouting();
+
+            app.UseAuthentication();
+            app.UseAuthorization();
 
             app.UseEndpoints(endpoints =>
             {

@@ -2,9 +2,9 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace BookStore.Model.Models
+namespace BookStore.Model.ViewModels
 {
-    public class User
+    public class UserVM
     {
         public int Id { get; set; }
         public string FullName { get; set; }
