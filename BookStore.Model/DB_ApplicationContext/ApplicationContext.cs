@@ -16,6 +16,7 @@ namespace BookStore.Model.DB_ApplicationContext
         public DbSet<Publish> Publishes { get; set; }
         public DbSet<Author> Authors { get; set; }
         public DbSet<Rate> Rates { get; set; }
+        public DbSet<BookAuthor> BooksAuthors { get; set; }
 
         public ApplicationContext(DbContextOptions<ApplicationContext> options)
                 : base(options)

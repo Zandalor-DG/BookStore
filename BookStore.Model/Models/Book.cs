@@ -13,12 +13,6 @@ namespace BookStore.Model.Models
         public decimal Price { get; set; }
         public int NumberOfPage { get; set; }
         public DateTime TheYearOfPublishing { get; set; }
-        public List<Author> Author { get; set; }
         public int PublishId { get; set; }
-
-        public Book()
-        {
-            Author = new List<Author>();
-        }
     }
 }

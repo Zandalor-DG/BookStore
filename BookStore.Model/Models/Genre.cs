@@ -1,12 +1,21 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace BookStore.Model.Models
+﻿namespace BookStore.Model.Models
 {
+    #region << Using >>
+
+    using System.Collections.Generic;
+
+    #endregion
+
     public class Genre
     {
+        #region Properties
+
         public int Id { get; set; }
+
         public string Name { get; set; }
+
+        public List<Book> Books { get; set; } = new List<Book>();
+
+        #endregion
     }
 }

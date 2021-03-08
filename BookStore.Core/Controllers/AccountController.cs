@@ -1,30 +1,41 @@
-﻿using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
-using BookStore.Model.DB_ApplicationContext;
-using BookStore.Model.Models;
-
-namespace BookStore.Core.Controllers
+﻿namespace BookStore.Core.Controllers
 {
-    using System.IdentityModel.Tokens.Jwt;
-    using System.Security.Claims;
-    using BookStore.Model.ViewModels;
-    using Microsoft.IdentityModel.Tokens;
+    #region << Using >>
+
     using System;
     using System.Collections.Generic;
+    using System.IdentityModel.Tokens.Jwt;
     using System.Linq;
+    using System.Security.Claims;
+    using System.Threading.Tasks;
     using BCrypt.Net;
+    using BookStore.Model.DB_ApplicationContext;
+    using BookStore.Model.Models;
+    using BookStore.Model.ViewModels;
     using Microsoft.AspNetCore.Mvc;
+    using Microsoft.EntityFrameworkCore;
+    using Microsoft.IdentityModel.Tokens;
+
+    #endregion
 
     [Route("api/[controller]")]
     [ApiController]
-    public class AccountController : ControllerBase
+    public class AccountController : Controller
     {
+        #region Properties
+
         private readonly ApplicationContext db;
+
+        #endregion
+
+        #region Constructors
 
         public AccountController(ApplicationContext context)
         {
             this.db = context;
         }
+
+        #endregion
 
         // GET: api/Account
         [HttpGet]
@@ -40,9 +51,7 @@ namespace BookStore.Core.Controllers
             var user = await this.db.Users.FindAsync(id);
 
             if (user == null)
-            {
                 return NotFound();
-            }
 
             return user;
         }
@@ -54,9 +63,7 @@ namespace BookStore.Core.Controllers
         public async Task<IActionResult> PutUser(int id, User user)
         {
             if (id != user.Id)
-            {
                 return BadRequest();
-            }
 
             this.db.Entry(user).State = EntityState.Modified;
 
@@ -67,13 +74,9 @@ namespace BookStore.Core.Controllers
             catch (DbUpdateConcurrencyException)
             {
                 if (!UserExists(id))
-                {
                     return NotFound();
-                }
                 else
-                {
                     throw;
-                }
             }
 
             return NoContent();
@@ -97,9 +100,7 @@ namespace BookStore.Core.Controllers
         {
             var user = await this.db.Users.FindAsync(id);
             if (user == null)
-            {
                 return NotFound();
-            }
 
             this.db.Users.Remove(user);
             await this.db.SaveChangesAsync();
@@ -113,61 +114,62 @@ namespace BookStore.Core.Controllers
         }
 
         [HttpPost("/token")]
-        public IActionResult Token(string email, string password)
+        public async Task<IActionResult> Token(LoginModel authorizedUser)
         {
-            var identity = GetIdentity(email, password);
+            var identity = await GetIdentityOrDefaultAsync(authorizedUser);
             if (identity == null)
-            {
                 return BadRequest(new { errorText = "Invalid username or password." });
-            }
 
             var now = DateTime.UtcNow;
             // создаем JWT-токен
             var jwt = new JwtSecurityToken(
-                    issuer: TokenForUser.ISSUER,
-                    audience: TokenForUser.AUDIENCE,
-                    notBefore: now,
-                    claims: identity.Claims,
-                    expires: now.Add(TimeSpan.FromMinutes(TokenForUser.LIFETIME)),
-                    signingCredentials: new SigningCredentials(TokenForUser.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
+                                           TokenForUser.ISSUER,
+                                           TokenForUser.AUDIENCE,
+                                           notBefore: now,
+                                           claims: identity.Claims,
+                                           expires: now.Add(TimeSpan.FromMinutes(TokenForUser.LIFETIME)),
+                                           signingCredentials: new SigningCredentials(TokenForUser.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
+
             var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
 
             var response = new
-            {
-                access_token = encodedJwt,
-                username = identity.Name
-            };
+                           {
+                                   access_token = encodedJwt,
+                                   username = identity.Name
+                           };
 
             return Json(response);
         }
 
-        private async Task<ActionResult<ClaimsIdentity>> GetIdentity(string email, string password)
+        private async Task<ClaimsIdentity> GetIdentityOrDefaultAsync(LoginModel authorizedUser)
         {
-            User user = await this.db.Users.FirstOrDefaultAsync(x => x.Email == email && x.Password == BCrypt.HashPassword(password));
-            UserVM userVm = new UserVM()
-            {
-                Id = user.Id,
-                FullName = user.FullName,
-                Email = user.Email,
-                Password = user.Password,
-                DateOfBirthday = user.DateOfBirthday,
-            };
+            var user = await this.db.Users.FirstOrDefaultAsync(x => x.Email == authorizedUser.Email
+                                                                 && x.Password == BCrypt.HashPassword(authorizedUser.Password));
 
-            if (userVm != null)
-            {
-                var claims = new List<Claim>
-                {
-                    new Claim(ClaimsIdentity.DefaultNameClaimType, userVm.Email),
-                    // new Claim(ClaimsIdentity.DefaultRoleClaimType, userVm.Role)
-                };
-                ClaimsIdentity claimsIdentity =
-                new ClaimsIdentity(claims, "Token", ClaimsIdentity.DefaultNameClaimType,
-                    ClaimsIdentity.DefaultRoleClaimType);
-                return claimsIdentity;
-            }
+            if (user == null)
+                return null;
 
-            // если пользователя не найдено
-            return null;
+            var userVm = new UserVM()
+                         {
+                                 Id = user.Id,
+                                 FullName = user.FullName,
+                                 Email = user.Email,
+                                 Password = user.Password,
+                                 DateOfBirthday = user.DateOfBirthday,
+                                 AvatarId = user.AvatarId,
+                         };
+
+            var claims = new List<Claim>
+                         {
+                                 new Claim(ClaimsIdentity.DefaultNameClaimType, userVm.Email),
+                                 // new Claim(ClaimsIdentity.DefaultRoleClaimType, person.Role)
+                         };
+
+            var claimsIdentity =
+                    new ClaimsIdentity(claims, "Token", ClaimsIdentity.DefaultNameClaimType,
+                                       ClaimsIdentity.DefaultRoleClaimType);
+
+            return claimsIdentity;
         }
     }
 }
