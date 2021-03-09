@@ -1,12 +1,23 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace BookStore.Model.Models
+﻿namespace BookStore.Model.Models
 {
-    public class BookAuthor
+    #region << Using >>
+
+    using System;
+
+    #endregion
+
+    public class BookAuthor : IEntityBase
     {
+        #region Properties
+
+        public int Id { get; set; }
+
         public Book Book { get; set; }
+
         public Author Author { get; set; }
+
+        public DateTime CrDt { get; private set; } = new DateTime();
+
+        #endregion
     }
 }
