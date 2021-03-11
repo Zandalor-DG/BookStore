@@ -1,0 +1,18 @@
+.login__form {
+    margin: auto;
+    max-width: 300px;
+}
+.profilePage__title {
+    text-align: center;
+    margin-top: 30px;
+    margin-bottom: 10px;
+    font-weight: bolder;
+}
+
+.profilePage__photo {
+    margin: auto;
+}
+.profilePage__changePassword {
+    margin: auto;
+    max-width: 300px;
+}

@@ -5,7 +5,6 @@
     using System;
     using System.Collections.Generic;
     using System.IdentityModel.Tokens.Jwt;
-    using System.Linq;
     using System.Security.Claims;
     using System.Threading.Tasks;
     using BCrypt.Net;
@@ -20,7 +19,7 @@
 
     [Route("api/[controller]")]
     [ApiController]
-    public class AccountController : Controller
+    public class AccountController : ControllerBase
     {
         #region Properties
 
@@ -37,100 +36,45 @@
 
         #endregion
 
-        // GET: api/Account
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetUsers()
-        {
-            return await this.db.Users.ToListAsync();
-        }
-
-        // GET: api/Account/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<User>> GetUser(int id)
-        {
-            var user = await this.db.Users.FindAsync(id);
-
-            if (user == null)
-                return NotFound();
-
-            return user;
-        }
-
-        // PUT: api/Account/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutUser(int id, User user)
-        {
-            if (id != user.Id)
-                return BadRequest();
-
-            this.db.Entry(user).State = EntityState.Modified;
-
-            try
-            {
-                await this.db.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UserExists(id))
-                    return NotFound();
-                else
-                    throw;
-            }
-
-            return NoContent();
-        }
-
-        // POST: api/Account
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
+        // Post: api/Account
         [HttpPost]
-        public async Task<ActionResult<User>> PostUser(User user)
+        public async Task<ActionResult<User>> SignUp(RegisterModel registerUser)
         {
-            this.db.Users.Add(user);
-            await this.db.SaveChangesAsync();
+            var candidate = await this.db.Users.FirstAsync(u => u.Email == registerUser.Email);
+            if (candidate != null)
+                return BadRequest("User already exists");
 
-            return CreatedAtAction("GetUser", new { id = user.Id }, user);
+            var passwordHash = BCrypt.HashPassword(registerUser.Password);
+            var user = await this.db.Users.AddAsync(new User()
+                                                    {
+                                                            Email = registerUser.Email,
+                                                            Password = passwordHash,
+                                                    });
+
+            var userVm = new UserVM()
+                         {
+                                 Email = user.Entity.Email,
+                         };
+
+            var identity = await GetIdentityOrDefaultAsync(new LoginModel()
+                                                           {
+                                                                   Email = registerUser.Email,
+                                                                   Password = registerUser.Password
+                                                           });
+
+            var encodedJwt = CreateJwtSecurityToken(identity);
+
+            return Ok(userVm);
         }
 
-        // DELETE: api/Account/5
-        [HttpDelete("{id}")]
-        public async Task<ActionResult<User>> DeleteUser(int id)
-        {
-            var user = await this.db.Users.FindAsync(id);
-            if (user == null)
-                return NotFound();
-
-            this.db.Users.Remove(user);
-            await this.db.SaveChangesAsync();
-
-            return user;
-        }
-
-        private bool UserExists(int id)
-        {
-            return this.db.Users.Any(e => e.Id == id);
-        }
-
-        [HttpPost("/token")]
-        public async Task<IActionResult> Token(LoginModel authorizedUser)
+        [HttpPost]
+        public async Task<IActionResult> SignIn(LoginModel authorizedUser)
         {
             var identity = await GetIdentityOrDefaultAsync(authorizedUser);
             if (identity == null)
                 return BadRequest(new { errorText = "Invalid username or password." });
 
-            var now = DateTime.UtcNow;
-            // создаем JWT-токен
-            var jwt = new JwtSecurityToken(
-                                           TokenForUser.ISSUER,
-                                           TokenForUser.AUDIENCE,
-                                           notBefore: now,
-                                           claims: identity.Claims,
-                                           expires: now.Add(TimeSpan.FromMinutes(TokenForUser.LIFETIME)),
-                                           signingCredentials: new SigningCredentials(TokenForUser.GetSymmetricSecurityKey(), SecurityAlgorithms.HmacSha256));
-
-            var encodedJwt = new JwtSecurityTokenHandler().WriteToken(jwt);
+            var encodedJwt = CreateJwtSecurityToken(identity);
 
             var response = new
                            {
@@ -138,7 +82,7 @@
                                    username = identity.Name
                            };
 
-            return Json(response);
+            return Ok(response);
         }
 
         private async Task<ClaimsIdentity> GetIdentityOrDefaultAsync(LoginModel authorizedUser)
@@ -170,6 +114,21 @@
                                        ClaimsIdentity.DefaultRoleClaimType);
 
             return claimsIdentity;
+        }
+
+        private static string CreateJwtSecurityToken(ClaimsIdentity identity)
+        {
+            var now = DateTime.UtcNow;
+            var jwt = new JwtSecurityToken(
+                                           TokenForUser.ISSUER,
+                                           TokenForUser.AUDIENCE,
+                                           notBefore: now,
+                                           claims: identity.Claims,
+                                           expires: now.Add(TimeSpan.FromMinutes(TokenForUser.LIFETIME)),
+                                           signingCredentials: new SigningCredentials(TokenForUser.GetSymmetricSecurityKey(),
+                                                                                      SecurityAlgorithms.HmacSha256));
+
+            return new JwtSecurityTokenHandler().WriteToken(jwt);
         }
     }
 }

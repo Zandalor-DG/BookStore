@@ -1,0 +1,17 @@
+{
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": true,
+        "editor.formatOnSave": false
+    },
+    "cSpell.words": [
+        "antd",
+        "craco",
+        "filedata",
+        "sider",
+        "signinbytoken",
+        "todos",
+        "uploadavatar"
+    ],
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "cSpell.ignoreWords": ["signin", "signup"]
+}

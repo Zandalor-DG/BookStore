@@ -3,7 +3,6 @@
     #region << Using >>
 
     using System;
-    using System.Collections.Generic;
 
     #endregion
 
@@ -15,9 +14,9 @@
 
         public double RateForBook { get; set; }
 
-        public List<Book> Books { get; set; } = new List<Book>();
+        public Book Book { get; set; }
 
-        public List<User> Users { get; set; } = new List<User>();
+        public User User { get; set; }
 
         public DateTime CrDt { get; private set; } = new DateTime();
 

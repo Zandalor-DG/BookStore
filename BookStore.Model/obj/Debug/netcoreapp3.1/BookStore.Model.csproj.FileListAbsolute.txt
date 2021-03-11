@@ -6,4 +6,3 @@ C:\Work\Learning\BookStore\BookStore.Model\obj\Debug\netcoreapp3.1\BookStore.Mod
 C:\Work\Learning\BookStore\BookStore.Model\obj\Debug\netcoreapp3.1\BookStore.Model.csproj.CoreCompileInputs.cache
 C:\Work\Learning\BookStore\BookStore.Model\obj\Debug\netcoreapp3.1\BookStore.Model.dll
 C:\Work\Learning\BookStore\BookStore.Model\obj\Debug\netcoreapp3.1\BookStore.Model.pdb
-C:\Work\Learning\BookStore\BookStore.Model\obj\Debug\netcoreapp3.1\BookStore.Model.csprojAssemblyReference.cache

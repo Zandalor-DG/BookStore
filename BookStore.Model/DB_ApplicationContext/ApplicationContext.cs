@@ -2,9 +2,6 @@
 {
     #region << Using >>
 
-    using System;
-    using System.Collections.Generic;
-    using BCrypt.Net;
     using BookStore.Model.Models;
     using Microsoft.EntityFrameworkCore;
 
@@ -41,21 +38,5 @@
         }
 
         #endregion
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            modelBuilder.Entity<User>().HasData(
-                                                new List<User>
-                                                {
-                                                        new User
-                                                        {
-                                                                Id = 1,
-                                                                FullName = "Test",
-                                                                Password = BCrypt.HashPassword("test"),
-                                                                Email = "test@test.ru",
-                                                                DateOfBirthday = new DateTime()
-                                                        },
-                                                });
-        }
     }
 }
